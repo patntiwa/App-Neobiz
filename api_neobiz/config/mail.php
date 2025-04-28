@@ -94,6 +94,11 @@ return [
                 'postmark',
             ],
         ],
+
+            // start mailtrap transport
+        'mailtrap' => [
+            'transport' => 'mailtrap'
+            ],
     ],
 
     /*

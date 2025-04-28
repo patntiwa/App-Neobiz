@@ -27,9 +27,9 @@ class Account extends Authenticatable
     {
         return $this->belongsToMany(Role::class);
     }
-
-    public function hasRole($role)
+    public function hasRole($roleName)
     {
-        return $this->roles()->where('name', $role)->exists();
+        return $this->roles()->where('name', $roleName)->exists();
     }
+
 }

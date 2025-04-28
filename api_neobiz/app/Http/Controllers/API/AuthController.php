@@ -29,7 +29,7 @@ class AuthController extends Controller
 
         event(new Registered($account));
 
-        return response()->json(['message' => 'Registered successfully. Please verify your email.'], 201);
+        return response()->json(['message' => 'Utilisateur créé avec succès. Please verify your email.'], 201);
     }
 
     public function login(Request $request)
