@@ -57,10 +57,11 @@ class AuthService
         ]);
 
         event(new \Illuminate\Auth\Events\Registered($account));
+        
 
-        $verificationUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+        $verificationUrl = URL::temporarySignedRoute(
             'verification.verify',
-            \Illuminate\Support\Carbon::now()->addMinutes(60),
+            Carbon::now()->addMinutes(60),
             ['id' => $account->id, 'hash' => sha1($account->email)]
         );
 
