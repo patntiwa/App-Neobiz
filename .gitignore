@@ -1,0 +1,22 @@
+# Laravel (backend)
+backend/vendor/
+backend/node_modules/
+backend/public/storage
+backend/storage/*.key
+backend/.env
+backend/.phpunit.result.cache
+backend/storage/logs/*
+backend/storage/framework/cache/*
+backend/storage/framework/sessions/*
+backend/storage/framework/views/*
+backend/database/database.sqlite
+
+# React Vite (frontend)
+frontend/node_modules/
+frontend/.next/
+frontend/.env.local
+frontend/dist/
+frontend/.turbo/
+frontend/.vscode/
+frontend/.DS_Store
+frontend/build/

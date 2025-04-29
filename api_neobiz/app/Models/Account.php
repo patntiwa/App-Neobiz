@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Notifications\ResetPasswordNotification;
+use Illuminate\Auth\Notifications\ResetPassword as DefaultResetPasswordNotification;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 
 class Account extends Authenticatable
 {
@@ -31,5 +34,10 @@ class Account extends Authenticatable
     {
         return $this->roles()->where('name', $roleName)->exists();
     }
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new ResetPasswordNotification($token));
+    }
+
 
 }

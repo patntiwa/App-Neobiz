@@ -34,6 +34,10 @@ return [
     */
 
     'mailers' => [
+                    // start mailtrap transport
+                    'mailtrap' => [
+                        'transport' => 'mailtrap'
+                    ],
         'smtp' => [
             'transport' => 'smtp',
             'url' => env('MAIL_URL'),
@@ -94,11 +98,6 @@ return [
                 'postmark',
             ],
         ],
-
-            // start mailtrap transport
-        'mailtrap' => [
-            'transport' => 'mailtrap'
-            ],
     ],
 
     /*

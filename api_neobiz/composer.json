@@ -10,11 +10,14 @@
         "laravel/framework": "^10.10",
         "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.8",
+        "nyholm/psr7": "^1.8",
         "php-http/guzzle7-adapter": "^1.1",
-        "railsware/mailtrap-php": "^2.1"
+        "railsware/mailtrap-php": "^2.1",
+        "symfony/http-client": "^7.2"
     },
     "require-dev": {
         "fakerphp/faker": "^1.9.1",
+        "laravel-lang/lang": "^15.2",
         "laravel/pint": "^1.0",
         "laravel/sail": "^1.18",
         "mockery/mockery": "^1.4.4",
