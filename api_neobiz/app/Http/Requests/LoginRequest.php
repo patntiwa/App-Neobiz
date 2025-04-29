@@ -11,19 +11,30 @@ class LoginRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true; // Changez false à true
     }
 
     /**
      * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
+            'remember_me' => ['boolean'] // Optionnel
+        ];
+    }
+
+    /**
+     * Get custom messages for validator errors.
+     */
+    public function messages(): array
+    {
+        return [
+            'email.required' => 'L\'adresse email est requise',
+            'email.email' => 'L\'adresse email n\'est pas valide',
+            'password.required' => 'Le mot de passe est requis'
         ];
     }
 }

@@ -6,6 +6,8 @@ use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\PasswordResetController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 
+
+
 /*
 |--------------------------------------------------------------------------
 | Public API Routes

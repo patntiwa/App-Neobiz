@@ -87,5 +87,37 @@ class AuthService
         });
     }
 
+    public function verify2fa(array $data)
+    {
+        $account = Account::where('email', $data['email'])->first();
+
+        if (! $account) {
+            abort(404, 'Compte non trouvé.');
+        }
+
+        if ($account->two_factor_code !== $data['code']) {
+            abort(401, 'Code de vérification incorrect.');
+        }
+
+        if ($account->two_factor_expires_at->lt(now())) {
+            abort(401, 'Code expiré.');
+        }
+
+        // Si tout est OK ➔ Authentification validée
+        $token = $account->createToken('auth_token')->plainTextToken;
+
+        // Réinitialiser le code 2FA
+        $account->update([
+            'two_factor_code' => null,
+            'two_factor_expires_at' => null,
+        ]);
+
+        return response()->json([
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+        ]);
+    }
+
+
 
 }
