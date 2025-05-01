@@ -2,23 +2,21 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\API\AuthController;
-use App\Http\Controllers\API\PasswordResetController;
+use App\Http\Controllers\API\{
+    AuthController,
+    PasswordResetController,
+    ClientController,
+    ProjectController,
+    UserInfoController,
+    RoleController
+};
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
-use App\Http\Controllers\API\ClientController;
-use App\Http\Controllers\API\ProjectController;
-use App\Http\Controllers\API\UserInfoController;
-use App\Http\Controllers\API\RoleController;
-
-
 
 /*
 |--------------------------------------------------------------------------
-| Public API Routes
+| Authentication Routes
 |--------------------------------------------------------------------------
 */
-
-// Routes d'authentification
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
@@ -27,53 +25,43 @@ Route::prefix('auth')->group(function () {
     Route::post('/reset-password', [PasswordResetController::class, 'reset']);
 });
 
-// Email verification routes
-Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
-    $request->fulfill();
-    return response()->json(['message' => 'Votre adresse email a été vérifiée avec succès.']);
-})->middleware(['signed'])->name('verification.verify');
-
-Route::post('/email/resend', function (Request $request) {
-    if ($request->user()->hasVerifiedEmail()) {
-        return response()->json(['message' => 'Votre email est déjà vérifié.'], 400);
-    }
-
-    $request->user()->sendEmailVerificationNotification();
-
-    return response()->json(['message' => 'Un nouvel email de vérification a été envoyé.']);
-})->middleware(['auth:sanctum']);
+/*
+|--------------------------------------------------------------------------
+| Email Verification Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['signed'])->name('verification.verify')
+    ->get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+        $request->fulfill();
+        return response()->json(['message' => 'Votre adresse email a été vérifiée avec succès.']);
+    });
 
 /*
 |--------------------------------------------------------------------------
-| Protected API Routes
+| Protected Routes
 |--------------------------------------------------------------------------
 */
-
-    Route::middleware('auth:sanctum')->group(function () {
-        // Route utilisateur
-        Route::get('/user', function (Request $request) {
-            return $request->user();
-        });
-
-        Route::middleware('auth:sanctum')->prefix('user-info')->group(function () {
-            Route::put('/', [UserInfoController::class, 'update']); // Mise à jour des informations de l'utilisateur
-        });
-        Route::middleware(['auth:sanctum', 'role:admin'])->prefix('roles')->group(function () {
-            Route::get('/', [RoleController::class, 'index']); // Liste des rôles
-            Route::post('/', [RoleController::class, 'store']); // Créer un rôle
-            Route::get('{id}', [RoleController::class, 'show']); // Afficher un rôle
-            Route::put('{id}', [RoleController::class, 'update']); // Mettre à jour un rôle
-            Route::delete('{id}', [RoleController::class, 'destroy']); // Supprimer un rôle
-        });
+Route::middleware('auth:sanctum')->group(function () {
+    // User Profile Routes
+    Route::get('/user', fn(Request $request) => $request->user());
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
     
-     // Route client des utilisateurs
-    Route::get('/', [ClientController::class, 'index']); // Liste des clients
-    Route::post('/', [ClientController::class, 'store']); // Création d'un client
-    Route::get('{client}', [ClientController::class, 'show']); // Voir un client
-    Route::put('{client}', [ClientController::class, 'update']); // Mise à jour d'un client
-    Route::delete('{client}', [ClientController::class, 'destroy']); // Supprimer un client
+    // User Info Routes
+    Route::prefix('user-info')->group(function () {
+        Route::put('/', [UserInfoController::class, 'update']);
+    });
 
-    Route::middleware('auth:sanctum')->prefix('projects')->group(function () {
+    // Client Management Routes
+    Route::prefix('clients')->group(function () {
+        Route::get('/', [ClientController::class, 'index']);
+        Route::post('/', [ClientController::class, 'store']);
+        Route::get('{client}', [ClientController::class, 'show']);
+        Route::put('{client}', [ClientController::class, 'update']);
+        Route::delete('{client}', [ClientController::class, 'destroy']);
+    });
+
+    // Project Management Routes
+    Route::prefix('projects')->group(function () {
         Route::get('/', [ProjectController::class, 'index']);
         Route::post('/', [ProjectController::class, 'store']);
         Route::get('{project}', [ProjectController::class, 'show']);
@@ -81,46 +69,46 @@ Route::post('/email/resend', function (Request $request) {
         Route::delete('{project}', [ProjectController::class, 'destroy']);
     });
 
-    // Route de déconnexion
-    Route::post('/auth/logout', [AuthController::class, 'logout']);
-
     /*
     |--------------------------------------------------------------------------
     | Admin Routes
     |--------------------------------------------------------------------------
     */
-    Route::prefix('admin')->middleware('role:admin')->group(function () {
-        Route::get('/dashboard', function () {
-            return response()->json(['message' => 'Bienvenue Admin']);
+    Route::middleware('role:admin')->group(function () {
+        // Role Management Routes
+        Route::prefix('roles')->group(function () {
+            Route::get('/', [RoleController::class, 'index']);
+            Route::post('/', [RoleController::class, 'store']);
+            Route::get('{id}', [RoleController::class, 'show']);
+            Route::put('{id}', [RoleController::class, 'update']);
+            Route::delete('{id}', [RoleController::class, 'destroy']);
+        });
+
+        Route::prefix('admin')->group(function () {
+            Route::get('/dashboard', fn() => response()
+                ->json(['message' => 'Bienvenue Admin']));
         });
     });
 
     /*
     |--------------------------------------------------------------------------
-    | Super Admin & Admin Routes
+    | Super Admin Routes
     |--------------------------------------------------------------------------
     */
-    Route::prefix('management')
-        ->middleware('role:super_admin,admin')
-        ->group(function () {
-            Route::get('/users', function () {
-                return response()->json(['message' => 'Gestion des utilisateurs']);
-            });
-            
-            // Espace pour ajouter d'autres routes de gestion
+    Route::middleware('role:super_admin')->prefix('super-admin')->group(function () {
+        Route::get('/management/users', fn() => response()
+            ->json(['message' => 'Gestion des utilisateurs']));
+    });
+
+    // Email Verification for Authenticated Users
+    Route::post('/email/resend', function (Request $request) {
+        if ($request->user()->hasVerifiedEmail()) {
+            return response()->json(['message' => 'Votre email est déjà vérifié.'], 400);
+        }
+        $request->user()->sendEmailVerificationNotification();
+        return response()->json(['message' => 'Un nouvel email de vérification a été envoyé.']);
     });
 });
-
-/*
-|--------------------------------------------------------------------------
-| API Version Control (Optional)
-|--------------------------------------------------------------------------
-*/
-
-// Example pour versionner l'API si nécessaire
-// Route::prefix('v1')->group(function () {
-//     // Routes de l'API v1
-// });
 
 
 
