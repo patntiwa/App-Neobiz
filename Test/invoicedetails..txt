@@ -1,0 +1,2 @@
+$invoice = App\Models\Invoice::first();
+$invoice->invoiceDetails; // Cela doit te donner les détails de la facture
