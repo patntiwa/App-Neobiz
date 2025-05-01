@@ -5,6 +5,10 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\PasswordResetController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use App\Http\Controllers\API\ClientController;
+use App\Http\Controllers\API\ProjectController;
+use App\Http\Controllers\API\UserInfoController;
+use App\Http\Controllers\API\RoleController;
 
 
 
@@ -45,10 +49,36 @@ Route::post('/email/resend', function (Request $request) {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('auth:sanctum')->group(function () {
-    // Route utilisateur
-    Route::get('/user', function (Request $request) {
-        return $request->user();
+    Route::middleware('auth:sanctum')->group(function () {
+        // Route utilisateur
+        Route::get('/user', function (Request $request) {
+            return $request->user();
+        });
+
+        Route::middleware('auth:sanctum')->prefix('user-info')->group(function () {
+            Route::put('/', [UserInfoController::class, 'update']); // Mise à jour des informations de l'utilisateur
+        });
+        Route::middleware(['auth:sanctum', 'role:admin'])->prefix('roles')->group(function () {
+            Route::get('/', [RoleController::class, 'index']); // Liste des rôles
+            Route::post('/', [RoleController::class, 'store']); // Créer un rôle
+            Route::get('{id}', [RoleController::class, 'show']); // Afficher un rôle
+            Route::put('{id}', [RoleController::class, 'update']); // Mettre à jour un rôle
+            Route::delete('{id}', [RoleController::class, 'destroy']); // Supprimer un rôle
+        });
+    
+     // Route client des utilisateurs
+    Route::get('/', [ClientController::class, 'index']); // Liste des clients
+    Route::post('/', [ClientController::class, 'store']); // Création d'un client
+    Route::get('{client}', [ClientController::class, 'show']); // Voir un client
+    Route::put('{client}', [ClientController::class, 'update']); // Mise à jour d'un client
+    Route::delete('{client}', [ClientController::class, 'destroy']); // Supprimer un client
+
+    Route::middleware('auth:sanctum')->prefix('projects')->group(function () {
+        Route::get('/', [ProjectController::class, 'index']);
+        Route::post('/', [ProjectController::class, 'store']);
+        Route::get('{project}', [ProjectController::class, 'show']);
+        Route::put('{project}', [ProjectController::class, 'update']);
+        Route::delete('{project}', [ProjectController::class, 'destroy']);
     });
 
     // Route de déconnexion

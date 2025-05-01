@@ -50,5 +50,20 @@ class Account extends Authenticatable
         $this->notify(new VerifyEmailNotification($verificationUrl));
     }
 
+    public function userInfo()
+    {
+        return $this->hasOne(UserInfo::class);
+    }
+
+    public function clients()
+    {
+        return $this->hasMany(Client::class);
+    }
+    //project
+    public function projects()
+    {
+        return $this->hasMany(Project::class);
+    }
+
 
 }
