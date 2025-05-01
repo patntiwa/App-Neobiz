@@ -8,8 +8,11 @@ use App\Http\Controllers\API\{
     ClientController,
     ProjectController,
     UserInfoController,
-    RoleController
+    RoleController,
+    InvoiceController,
+    TaskController
 };
+
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 
 /*
@@ -67,6 +70,24 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('{project}', [ProjectController::class, 'show']);
         Route::put('{project}', [ProjectController::class, 'update']);
         Route::delete('{project}', [ProjectController::class, 'destroy']);
+    });
+
+     // Invoices Routes
+    Route::middleware('auth:sanctum')->prefix('invoices')->group(function () {
+        Route::get('/', [InvoiceController::class, 'index']);
+        Route::post('/', [InvoiceController::class, 'store']);
+        Route::get('{id}', [InvoiceController::class, 'show']);
+        Route::put('{id}', [InvoiceController::class, 'update']);
+        Route::delete('{id}', [InvoiceController::class, 'destroy']);
+    });
+    
+     // tasks Routes
+    Route::middleware('auth:sanctum')->prefix('tasks')->group(function () {
+        Route::get('/', [TaskController::class, 'index']);
+        Route::post('/', [TaskController::class, 'store']);
+        Route::get('{id}', [TaskController::class, 'show']);
+        Route::put('{id}', [TaskController::class, 'update']);
+        Route::delete('{id}', [TaskController::class, 'destroy']);
     });
 
     /*
