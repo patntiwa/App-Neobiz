@@ -1,6 +1,6 @@
 // src/App.tsx
 import { Routes, Route } from 'react-router-dom';
-import LandingPage from './pages/Landing/LandingPage';
+import LandingPage from './pages/Landing/LandingPages';
 import DashboardLayout from './layouts/DashboardLayout';
 import DashboardHome from './pages/Dashboard/Home';
 

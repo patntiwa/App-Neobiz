@@ -1,0 +1,43 @@
+$project = \App\Models\Project::find(1); // Remplace par l'ID du projet
+
+$projectDetail = $project->details()->create([
+    'objectives' => 'Objectifs du projet X',
+    'deliverables' => 'Livrables pour le projet X',
+    'milestones' => json_encode([
+        ['libelle' => 'Phase de conception', 'date' => '2024-05-01'],
+        ['libelle' => 'Phase de test', 'date' => '2024-06-15']
+    ]),
+    'stakeholders' => json_encode([
+        ['nom' => 'Alice', 'role' => 'Manager', 'email' => 'alice@exemple.com']
+    ]),
+    'resource_breakdown' => json_encode([
+        ['type' => 'Personnel', 'ressource' => 'Jean', 'quantite' => 50]
+    ]),
+    'risk_assessment' => 'Risque d\'incidents techniques.',
+    'estimated_hours' => 200,
+    'actual_hours' => 50,
+    'budget_spent' => 1500.50,
+    'notes' => 'Le projet avance bien.',
+    'attachments_url' => 'http://storage.example.com/docs/project/1'
+]);
+
+$projectDetail;
+
+
+//update
+
+$projectDetail = \App\Models\ProjectDetail::find(1); // Remplace par l'ID du projet detail
+
+$projectDetail->update([
+    'objectives' => 'Mise à jour des objectifs du projet X',
+    'deliverables' => 'Livrables révisés pour le projet X',
+]);
+
+$projectDetail;
+
+
+//delete
+
+$projectDetail = \App\Models\ProjectDetail::find(1); // Remplace par l'ID du projet detail
+
+$projectDetail->delete();
