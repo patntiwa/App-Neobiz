@@ -9,7 +9,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('accounts', function (Blueprint $table) {
-            $table->id(); // BIGINT ID
+            $table->id();
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
@@ -17,6 +17,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->string('two_factor_code')->nullable();
             $table->timestamp('two_factor_expires_at')->nullable();
+            $table->foreignId('account_status_id')->nullable()->constrained('account_statuses'); // Si cette ligne existe déjà
             $table->rememberToken();
             $table->timestamps();
         });

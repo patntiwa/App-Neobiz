@@ -10,7 +10,9 @@ use App\Http\Controllers\API\{
     UserInfoController,
     RoleController,
     InvoiceController,
-    TaskController
+    TaskController,
+    PaymentController,
+    CsrfCookieController
 };
 
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
@@ -20,6 +22,10 @@ use Illuminate\Foundation\Auth\EmailVerificationRequest;
 | Authentication Routes
 |--------------------------------------------------------------------------
 */
+
+Route::get('/sanctum/csrf-cookie', [CsrfCookieController::class, 'show']);
+
+
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
@@ -62,6 +68,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('{client}', [ClientController::class, 'update']);
         Route::delete('{client}', [ClientController::class, 'destroy']);
     });
+
+   //paiement routes 
+    Route::middleware(['auth:sanctum'])->prefix('payments')->group(function () {
+        Route::get('/', [PaymentController::class, 'index']);
+        Route::post('/', [PaymentController::class, 'store']);
+        Route::get('/stats', [PaymentController::class, 'stats']);
+    });
+
 
     // Project Management Routes
     Route::prefix('projects')->group(function () {
@@ -130,6 +144,7 @@ Route::middleware('auth:sanctum')->group(function () {
         return response()->json(['message' => 'Un nouvel email de vérification a été envoyé.']);
     });
 });
+
 
 
 

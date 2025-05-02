@@ -65,5 +65,14 @@ class Account extends Authenticatable
         return $this->hasMany(Project::class);
     }
 
+        public function status()
+    {
+        return $this->belongsTo(AccountStatus::class, 'account_status_id');
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
 
 }
