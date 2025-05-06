@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Mail, Lock, User, ArrowRight, AlertCircle, Building, FileText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { resendVerificationEmail } from "@/services/authService";
+import AuthService from '@/services/authService';
 
 const Signup = () => {
   const [clientType, setClientType] = useState<'personal' | 'freelance' | 'company'>('personal');
@@ -49,15 +49,12 @@ const Signup = () => {
     
     setIsLoading(true);
     
-    // Mapper le clientType vers un rôle d'utilisateur
-    const role = clientType === 'freelance' ? 'freelance' : 'client';
-    
+    // Appel à l'API pour l'inscription
     try {
       const result = await register({
         name,
         email,
         password,
-        role
       });
       
       if (!result.success) {
@@ -73,7 +70,7 @@ const Signup = () => {
 
   const handleResendVerification = async () => {
     try {
-      const result = await resendVerificationEmail();
+      const result = await AuthService.resendVerificationEmail();;
       console.log("Email de vérification renvoyé :", result.message);
     } catch (error) {
       console.error("Erreur lors de l'envoi de l'email de vérification :", error);

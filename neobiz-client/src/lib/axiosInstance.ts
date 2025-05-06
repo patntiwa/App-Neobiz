@@ -1,81 +1,60 @@
-import axios, { AxiosError } from "axios";
-import { useToast } from "@/hooks/use-toast";
+// src/lib/axiosInstance.ts
 
-// Instance Axios avec configuration de base
+import axios, { AxiosError, AxiosRequestConfig } from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+let csrfInitialized = false;
+
 const axiosInstance = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api`,
+  baseURL: `${API_URL}/api`,
+  withCredentials: true,
   headers: {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-    'X-Requested-With': 'XMLHttpRequest'
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
   },
-  withCredentials: true // Important pour CORS et les cookies CSRF
 });
 
-// État pour suivre l'initialisation CSRF
-let isCSRFInitialized = false;
-
-// Intercepteur pour les requêtes
+// Avant chaque requête (y compris login/register/logout), on s’assure d’avoir le cookie CSRF
 axiosInstance.interceptors.request.use(
-  async (config) => {
-    // Ne pas appeler /sanctum/csrf-cookie pour elle-même ou pour les requêtes GET
-    if (!isCSRFInitialized && config.method !== 'get' && !config.url?.includes('/sanctum/csrf-cookie')) {
-      try {
-        isCSRFInitialized = true;
-        await axiosInstance.get('/sanctum/csrf-cookie');
-      } catch (error) {
-        console.error('Failed to fetch CSRF cookie:', error);
-        isCSRFInitialized = false;
-      }
+  async (config: AxiosRequestConfig) => {
+    const url = config.url ?? '';
+    // N’appeler CSRF-cookie qu’une seule fois et en dehors de l’instance pour éviter la récursion
+    if (!csrfInitialized && !url.includes('/sanctum/csrf-cookie')) {
+      csrfInitialized = true;
+      await axios.get(`${API_URL}/sanctum/csrf-cookie`, {
+        withCredentials: true,
+      });
     }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Intercepteur pour les réponses
+// Gestion centralisée des réponses
 axiosInstance.interceptors.response.use(
   (response) => response,
-  (error: AxiosError) => {
-    // Gérer les erreurs 401 (non authentifié)
-    if (error.response?.status === 401) {
-      // Nettoyer les données d'authentification
-      localStorage.removeItem('user');
-      
-      // Rediriger vers la page de connexion seulement si nous ne sommes pas déjà dessus
-      if (!window.location.pathname.includes('/login')) {
-        window.location.href = '/login';
+  async (error: AxiosError) => {
+    const status = error.response?.status;
+
+    // CSRF expiré ou non initialisé → réinitialiser et réessayer une fois
+    if (status === 419) {
+      csrfInitialized = false;
+      try {
+        await axios.get(`${API_URL}/sanctum/csrf-cookie`, { withCredentials: true });
+        // @ts-ignore re-tentative de la requête originale
+        return axiosInstance(error.config);
+      } catch {
+        // si ça rate encore, on passe à la rejection
       }
     }
 
-    // Gérer les erreurs 419 (CSRF token expiré)
-    if (error.response?.status === 419) {
-      isCSRFInitialized = false;
-      // Récupérer un nouveau token CSRF et réessayer la requête
-      return axiosInstance.get('/sanctum/csrf-cookie').then(() => {
-        return axiosInstance(error.config);
-      });
-    }
-
-    // Ne pas exposer les détails des erreurs en production
-    if (import.meta.env.PROD) {
-      const safeError = new Error(
-        error.response?.data?.message || "Une erreur est survenue"
-      );
-      return Promise.reject(safeError);
-    }
-
-    // Créer un message d'erreur utilisateur convivial
-    const userMessage = error.response?.data?.message || 'Une erreur est survenue';
-    
-    // Afficher le toast d'erreur si nous ne sommes pas en train de gérer une redirection auth
-    if (error.response?.status !== 401) {
-      const toast = useToast();
-      toast.toast({
-        title: "Erreur",
-        description: userMessage,
-        variant: "destructive",
-      });
+    // Non authentifié → rediriger vers login
+    if (status === 401) {
+      localStorage.removeItem('currentUser');
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
     }
 
     return Promise.reject(error);

@@ -110,15 +110,6 @@ const Login = () => {
             </p>
           </div>
 
-          <div className="mt-8 pt-6 border-t border-gray-100">
-            <div className="text-sm text-center text-gray-500">
-              <p>Pour la démo, vous pouvez utiliser:</p>
-              <p className="mt-1"><strong>Admin:</strong> admin@neobiz.com</p>
-              <p><strong>Client:</strong> client@example.com</p>
-              <p><strong>Freelance:</strong> freelance@example.com</p>
-              <p className="text-xs mt-1">(n'importe quel mot de passe)</p>
-            </div>
-          </div>
         </div>
       </div>
     </div>

@@ -1,92 +1,62 @@
-interface PerformanceMetric {
+// src/services/performanceService.ts
+
+/**
+ * Permet d'envoyer une métrique de performance de chargement de page une seule fois.
+ */
+
+let didReport = false;
+
+export interface PerformanceMetric {
+  /** Nom de la métrique (ex: 'pageLoadTime') */
   name: string;
+  /** Durée en millisecondes */
   value: number;
-  timestamp: number;
-  path?: string;
+  /** Chemin courant (window.location.pathname) */
+  path: string;
+  /** Identifiant utilisateur (optionnel) */
   userId?: string;
 }
 
-class PerformanceService {
-  private static metrics: PerformanceMetric[] = [];
-  private static maxStoredMetrics = 100;
+/**
+ * Mesure et reporte la métrique 'pageLoadTime'.
+ * Ne fait rien si déjà appelé une fois.
+ *
+ * @param userId - Optionnel, identifiant de l'utilisateur
+ */
+export function reportPageLoadMetric(userId?: string): void {
+  if (didReport) return;
+  didReport = true;
 
-  static trackMetric(metric: Omit<PerformanceMetric, 'timestamp'>) {
-    this.metrics.push({
-      ...metric,
-      timestamp: Date.now()
-    });
+  // Navigation Timing API Level 2
+  const entries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
+  const navEntry = entries[0];
+  if (!navEntry) return;
 
-    // Garder seulement les dernières métriques
-    if (this.metrics.length > this.maxStoredMetrics) {
-      this.metrics = this.metrics.slice(-this.maxStoredMetrics);
-    }
+  // Calcul positif et fiable du temps de chargement
+  const pageLoadTime = navEntry.loadEventEnd - navEntry.startTime;
 
-    // En développement, log dans la console
-    if (import.meta.env.DEV) {
-      console.log('Performance metric:', metric);
-    }
+  const metric: PerformanceMetric = {
+    name: 'pageLoadTime',
+    value: pageLoadTime,
+    path: window.location.pathname,
+    userId,
+  };
 
-    // En production, on pourrait envoyer à un service d'analytics
-    if (import.meta.env.PROD) {
-      this.sendToAnalytics(metric);
-    }
-  }
-
-  static getWebVitals() {
-    if ('web-vital' in performance.getEntriesByType('navigation')) {
-      const navigationEntry = performance.getEntriesByType('navigation')[0] as any;
-      return {
-        fcp: navigationEntry.firstContentfulPaint,
-        lcp: navigationEntry.largestContentfulPaint,
-        fid: navigationEntry.firstInputDelay,
-        cls: navigationEntry.cumulativeLayoutShift,
-      };
-    }
-    return null;
-  }
-
-  private static async sendToAnalytics(metric: PerformanceMetric) {
-    // TODO: Implémenter l'envoi à un service d'analytics
-    // Par exemple Google Analytics, Sentry, ou un service personnalisé
-    try {
-      // const response = await fetch('your-analytics-endpoint', {
-      //   method: 'POST',
-      //   body: JSON.stringify(metric),
-      // });
-    } catch (error) {
-      console.error('Failed to send metric to analytics:', error);
-    }
-  }
-
-  static getMetricsSummary() {
-    if (this.metrics.length === 0) return null;
-
-    const summary = this.metrics.reduce((acc, metric) => {
-      if (!acc[metric.name]) {
-        acc[metric.name] = {
-          min: metric.value,
-          max: metric.value,
-          total: metric.value,
-          count: 1,
-        };
-      } else {
-        const current = acc[metric.name];
-        current.min = Math.min(current.min, metric.value);
-        current.max = Math.max(current.max, metric.value);
-        current.total += metric.value;
-        current.count += 1;
-      }
-      return acc;
-    }, {} as Record<string, { min: number; max: number; total: number; count: number }>);
-
-    // Calculer les moyennes
-    Object.keys(summary).forEach(key => {
-      const metric = summary[key];
-      metric.average = metric.total / metric.count;
-    });
-
-    return summary;
-  }
+  // Ici, tu peux envoyer la métrique à ton back,
+  // ou juste logger en dev :
+  console.log('Performance metric:', metric);
 }
 
-export default PerformanceService;
+/**
+ * Alias pour compatibilité avec usePerformanceMonitor.ts
+ */
+export const trackMetric = reportPageLoadMetric;
+
+/**
+ * Default export: objet contenant les deux fonctions
+ * pour permettre `import perfService from ...`
+ */
+export default {
+  reportPageLoadMetric,
+  trackMetric,
+};

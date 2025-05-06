@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Mail, ArrowRight, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
-import { forgotPassword } from "@/services/authService";
+import AuthService from '@/services/authService';
+
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -21,7 +22,8 @@ const ForgotPassword = () => {
     setIsLoading(true);
     
     try {
-      const result = await resetPassword(email);
+      const result = await AuthService.requestPasswordReset(email);
+
       
       if (result.success) {
         setIsSubmitted(true);
@@ -38,7 +40,7 @@ const ForgotPassword = () => {
 
   const handleForgotPassword = async (email: string) => {
     try {
-      const result = await forgotPassword(email);
+      const result = await ForgotPassword(email);
       console.log("Mot de passe oublié :", result.message);
     } catch (error) {
       console.error("Erreur lors de la demande de réinitialisation du mot de passe :", error);

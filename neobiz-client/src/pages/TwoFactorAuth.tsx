@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { ArrowRight, AlertCircle, Shield } from 'lucide-react';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { verify2FA } from "@/services/authService";
+import AuthService from '@/services/authService';
 
 const TwoFactorAuth = () => {
   const [code, setCode] = useState('');
@@ -15,7 +15,7 @@ const TwoFactorAuth = () => {
 
   const handle2FAVerification = async (code: string) => {
     try {
-      const result = await verify2FA(code);
+      const result = await AuthService.verify2FA(code);
       if (result.success) {
         navigate('/dashboard');
       } else {
