@@ -1,0 +1,2 @@
+$task = App\Models\Task::first();
+$task->taskDetails; // Cela doit te donner les détails de la tâche

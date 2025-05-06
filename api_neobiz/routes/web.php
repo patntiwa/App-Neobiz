@@ -3,6 +3,10 @@
 use Illuminate\Support\Facades\Route;
 use App\Mail\MyTestEmail;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Laravel\Sanctum\Http\Controllers\CsrfCookieController;
+use App\Http\Controllers\API\AuthController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -16,6 +20,23 @@ use Illuminate\Support\Facades\Mail;
 
 Route::get('/', function () {
     return view('welcome');
+});
+
+Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+    $request->fulfill();
+    return redirect('/email-verified'); // Redirection après vérification
+})->middleware(['auth', 'signed'])->name('verification.verify');
+
+Route::get('/email-verified', function () {
+    return view('auth.verified'); // Créez cette vue
+})->name('verification.success');
+
+
+
+Route::get('/sanctum/csrf-cookie', [CsrfCookieController::class, 'show']);
+Route::prefix('api/auth')->middleware(['web', 'api'])->group(function(){
+  Route::post('/login', [AuthController::class, 'login']);
+  Route::post('/logout', [AuthController::class, 'logout']);
 });
 
 
