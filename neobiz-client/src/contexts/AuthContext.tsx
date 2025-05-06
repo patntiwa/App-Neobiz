@@ -134,11 +134,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data } = await axiosInstance.post<AuthResponse>('/auth/register', info);
       setState(prev => ({ ...prev, user: data.user }));
-      navigate('/dashboard');
+      navigate('/login');
       return { success: true };
-    } catch (error) {
+    } catch (error: any) {
       handleError(error);
-      return { success: false, message: "Échec de l'inscription" };
+      let specificMessage = "Échec de l'inscription. Veuillez vérifier les informations fournies.";
+      if (axios.isAxiosError(error) && error.response?.data) {
+        const responseData = error.response.data;
+        // Si le backend renvoie un objet 'errors' (typique avec Laravel pour les erreurs de validation)
+        if (responseData.errors && typeof responseData.errors === 'object') {
+          specificMessage = Object.values(responseData.errors).flat().join(' ');
+        } else if (responseData.message && typeof responseData.message === 'string') {
+          specificMessage = responseData.message;
+        }
+      }
+      return { success: false, message: specificMessage };
     } finally {
       setState(prev => ({ ...prev, isLoading: false }));
     }
