@@ -10,9 +10,7 @@ use App\Http\Controllers\API\{
     UserInfoController,
     RoleController,
     InvoiceController,
-    TaskController,
-    PaymentController,
-    CsrfCookieController
+    TaskController
 };
 
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
@@ -22,10 +20,6 @@ use Illuminate\Foundation\Auth\EmailVerificationRequest;
 | Authentication Routes
 |--------------------------------------------------------------------------
 */
-
-Route::get('/sanctum/csrf-cookie', [CsrfCookieController::class, 'show']);
-
-
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
@@ -39,37 +33,11 @@ Route::prefix('auth')->group(function () {
 | Email Verification Routes
 |--------------------------------------------------------------------------
 */
-Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
-    $request->fulfill(); // Marque l'email comme vérifié
-
-    return response()->json([
-        'message' => 'Email vérifié avec succès.',
-    ]);
-})->middleware(['signed'])->name('verification.verify');
-
-Route::post('/email/verification-notification', function (Request $request) {
-    $request->user()->sendEmailVerificationNotification();
- 
-    return response()->json([
-        'message' => 'Lien de vérification renvoyé'
-    ]);
-})->middleware(['throttle:6,1'])->name('verification.send');
-
-// Pour Laravel Sanctum ou Jetstream
-Route::middleware(['auth:sanctum'])->get('/email/verify/{id}/{hash}', function (Request $request) {
-    if (! hash_equals((string) $request->route('id'), (string) $request->user()->getKey()) ||
-        ! hash_equals((string) $request->route('hash'), sha1($request->user()->getEmailForVerification()))) {
-        abort(403);
-    }
-
-    if ($request->user()->hasVerifiedEmail()) {
-        return response()->json(['message' => 'Déjà vérifié']);
-    }
-
-    $request->user()->markEmailAsVerified();
-
-    return response()->json(['message' => 'Email vérifié']);
-})->name('verification.verify');
+Route::middleware(['signed'])->name('verification.verify')
+    ->get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+        $request->fulfill();
+        return response()->json(['message' => 'Votre adresse email a été vérifiée avec succès.']);
+    });
 
 /*
 |--------------------------------------------------------------------------
@@ -94,14 +62,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('{client}', [ClientController::class, 'update']);
         Route::delete('{client}', [ClientController::class, 'destroy']);
     });
-
-   //paiement routes 
-    Route::middleware(['auth:sanctum'])->prefix('payments')->group(function () {
-        Route::get('/', [PaymentController::class, 'index']);
-        Route::post('/', [PaymentController::class, 'store']);
-        Route::get('/stats', [PaymentController::class, 'stats']);
-    });
-
 
     // Project Management Routes
     Route::prefix('projects')->group(function () {
@@ -169,15 +129,7 @@ Route::middleware('auth:sanctum')->group(function () {
         $request->user()->sendEmailVerificationNotification();
         return response()->json(['message' => 'Un nouvel email de vérification a été envoyé.']);
     });
-
-    // User Profile JSON Response Route
-    Route::middleware(['auth:sanctum', 'verified'])->get('/user/profile', function (Request $request) {
-        return response()->json($request->user()); // Retourne une réponse JSON pour les API
-    });
-
-    Route::middleware('auth:sanctum')->get('/user', [AuthController::class, 'user']);
 });
-
 
 
 

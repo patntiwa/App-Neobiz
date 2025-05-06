@@ -28,7 +28,7 @@ class DatabaseSeeder extends Seeder
 
         $account = Account::create([
             'name' => 'Patrick Ntiwa',
-            'email' => 'patntiwa19@gmail.com',
+            'email' => 'patntiwa19@gmaiil.com',
             'password' => Hash::make('Linux2p@t'),
             'is_active' => true,
         ]);
