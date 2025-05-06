@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use Illuminate\Auth\Events\Registered;
 
 class AuthService
 {
@@ -29,6 +30,7 @@ class AuthService
 
         // 2. Créer le compte
         $account = Account::create([
+            'name'=> $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
             'is_active' => true,
@@ -46,13 +48,27 @@ class AuthService
             'nom' => $data['nom'] ?? null,
         ]);
 
+        
         // 5. Envoyer l’email de vérification
+        event(new Registered($account));
         $account->sendEmailVerificationNotification();
+
+        // Modifier la génération de l'URL de vérification
+        $verificationUrl = URL::temporarySignedRoute(
+            'verification.verify',
+            Carbon::now()->addMinutes(60),
+            [
+                'id' => $account->getKey(),
+                'hash' => sha1($account->getEmailForVerification())
+            ]
+        );
 
         return response()->json([
             'message' => 'Compte créé. Veuillez vérifier votre adresse e-mail.',
+            'verification_url' => $verificationUrl,
         ], 201);
     }
+
 
     public function login(array $credentials)
     {
@@ -115,7 +131,10 @@ class AuthService
         ]);
     
         // Génération du token (si nécessaire)
-        $token = $account->createToken('auth_token')->plainTextToken;
+        $token = $account->createToken(
+            name: 'auth_token',
+            expiresAt: Carbon::now()->addDays(30)
+        )->plainTextToken;
     
         return response()->json([
             'message' => '2FA validé avec succès',

@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Mail\MyTestEmail;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -17,6 +19,15 @@ use Illuminate\Support\Facades\Mail;
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+    $request->fulfill();
+    return redirect('/email-verified'); // Redirection après vérification
+})->middleware(['auth', 'signed'])->name('verification.verify');
+
+Route::get('/email-verified', function () {
+    return view('auth.verified'); // Créez cette vue
+})->name('verification.success');
 
 
 

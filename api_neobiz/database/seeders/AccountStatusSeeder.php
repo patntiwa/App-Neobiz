@@ -12,7 +12,7 @@ class AccountStatusSeeder extends Seeder
         AccountStatus::insert([
             ['name' => 'standard', 'description' => 'Compte gratuit', 'price' => 0],
             ['name' => 'professionnel', 'description' => 'Accès professionnel', 'price' => 9900],
-            ['name' => 'full-option', 'description' => 'Toutes les fonctionnalités', 'price' => 14900],
+            ['name' => 'Prenium', 'description' => 'Toutes les fonctionnalités', 'price' => 14900],
         ]);
     }
 }

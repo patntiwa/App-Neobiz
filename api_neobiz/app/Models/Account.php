@@ -2,28 +2,38 @@
 
 namespace App\Models;
 
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Notifications\ResetPasswordNotification;
 use App\Notifications\VerifyEmailNotification;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class Account extends Authenticatable
+class Account extends Authenticatable implements MustVerifyEmail
 {
-    use HasApiTokens, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
-        'name', 'email', 'password', 'is_active'
+        'name',
+        'email',
+        'password',
+        'is_active',
+        'account_status_id',
+        'two_factor_code',
+        'two_factor_expires_at'
     ];
 
     protected $hidden = [
-        'password', 'remember_token', 'two_factor_code', 'two_factor_expires_at'
+        'password',
+        'remember_token',
     ];
 
     protected $casts = [
         'email_verified_at' => 'datetime',
         'two_factor_expires_at' => 'datetime',
+        'is_active' => 'boolean',
     ];
 
     public function roles()

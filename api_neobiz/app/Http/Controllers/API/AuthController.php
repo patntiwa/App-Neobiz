@@ -27,9 +27,15 @@ class AuthController extends Controller
     {
         return $this->authService->register($request->validated());
     }
+
     public function verify2fa(Request $request)
     {
         // Appel au service
         return $this->authService->verify2fa($request->all());
+    }
+
+    public function user(Request $request)
+    {
+        return response()->json($request->user());
     }
 }

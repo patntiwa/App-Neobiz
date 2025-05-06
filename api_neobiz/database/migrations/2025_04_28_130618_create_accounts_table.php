@@ -17,7 +17,10 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->string('two_factor_code')->nullable();
             $table->timestamp('two_factor_expires_at')->nullable();
-            $table->foreignId('account_status_id')->nullable()->constrained('account_statuses'); // Si cette ligne existe déjà
+            $table->foreignId('account_status_id')
+                  ->nullable()
+                  ->constrained('account_statuses')
+                  ->onDelete('set null');
             $table->rememberToken();
             $table->timestamps();
         });
