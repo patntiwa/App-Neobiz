@@ -15,7 +15,7 @@ interface AuthState {
 }
 
 interface AuthContextType extends AuthState {
-  login: (credentials: LoginCredentials) => Promise<{ success: boolean; message?: string }>;
+  login: (credentials: LoginCredentials) => Promise<{ success: boolean; message?: string; twoFactorRequired?: boolean }>;
   register: (data: RegisterData) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
   updateUser: (data: Partial<User>) => Promise<void>;
@@ -85,25 +85,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [state.isInitialized, state.user]);
 
-  const login = async (credentials: LoginCredentials) => {
+  const login = async (credentials: LoginCredentials): Promise<{ success: boolean; message?: string; twoFactorRequired?: boolean }> => {
     setState(prev => ({ ...prev, isLoading: true }));
     try {
       // 0) Récupérer le cookie CSRF avant le login
       await axios.get(`${API_URL}/sanctum/csrf-cookie`, { withCredentials: true });
 
-      // 1) Envoyer la requête de login
-      const { data } = await axiosInstance.post<AuthResponse>('/auth/login', credentials);
-      setState(prev => ({ ...prev, user: data.user }));
+      // 1) Envoyer la requête de login avec le nouveau endpoint /auth/login
+      // Utiliser `any` temporairement pour inspecter la réponse ou définir un type plus flexible
+      // qui peut inclure des indicateurs 2FA et l'objet utilisateur.
+      const { data } = await axiosInstance.post<any>('/auth/login', credentials);
 
-      // 2) Rediriger selon rôle ou provenance
-      const from = (location.state as any)?.from?.pathname
-        || (data.user.role === 'admin' ? '/admin/dashboard' : '/dashboard');
-      navigate(from, { replace: true });
+      // Vérifier si la 2FA est requise (adaptez "data.two_factor_enabled" à votre réponse API réelle)
+      if (data && data.two_factor_enabled === true) {
+        // Rediriger vers la page de vérification 2FA.
+        // Vous pourriez avoir besoin de stocker temporairement un identifiant ou un jeton si l'API le fournit pour l'étape 2FA.
+        navigate('/TwoFactorAuth'); // Assurez-vous que cette route existe et mène à votre composant de saisie de code 2FA.
+        return { success: true, twoFactorRequired: true, message: data.message || "Vérification en deux étapes requise." };
+      }
 
-      return { success: true };
-    } catch (error) {
+      // Si la connexion est directe et réussie (pas de 2FA ou 2FA déjà passée)
+      if (data && data.user) {
+        setState(prev => ({ ...prev, user: data.user }));
+
+        // Appel de getClientsRequest() après connexion réussie (si nécessaire)
+        // getClientsRequest(); 
+
+        const from = (location.state as any)?.from?.pathname
+          || (data.user.role === 'admin' ? '/admin/dashboard' : '/dashboard');
+        navigate(from, { replace: true });
+        return { success: true };
+      }
+      
+      // Si la réponse est 200 OK mais n'a ni indicateur 2FA ni objet utilisateur valide
+      throw new Error("Réponse de connexion inattendue du serveur.");
+
+    } catch (error: any) { // Utilisation de 'any' pour un accès flexible à error.response.data
       handleError(error);
-      return { success: false, message: 'Échec de la connexion' };
+      const message = error?.response?.data?.message || error.message || 'Échec de la connexion';
+      return { success: false, message };
     } finally {
       setState(prev => ({ ...prev, isLoading: false }));
     }
@@ -114,11 +134,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data } = await axiosInstance.post<AuthResponse>('/auth/register', info);
       setState(prev => ({ ...prev, user: data.user }));
-      navigate('/dashboard');
+      navigate('/login');
       return { success: true };
-    } catch (error) {
+    } catch (error: any) {
       handleError(error);
-      return { success: false, message: "Échec de l'inscription" };
+      let specificMessage = "Échec de l'inscription. Veuillez vérifier les informations fournies.";
+      if (axios.isAxiosError(error) && error.response?.data) {
+        const responseData = error.response.data;
+        // Si le backend renvoie un objet 'errors' (typique avec Laravel pour les erreurs de validation)
+        if (responseData.errors && typeof responseData.errors === 'object') {
+          specificMessage = Object.values(responseData.errors).flat().join(' ');
+        } else if (responseData.message && typeof responseData.message === 'string') {
+          specificMessage = responseData.message;
+        }
+      }
+      return { success: false, message: specificMessage };
     } finally {
       setState(prev => ({ ...prev, isLoading: false }));
     }

@@ -14,7 +14,7 @@ return [
     */
 
     'defaults' => [
-        'guard' => 'api',  // Changé de 'web' à 'api'
+        'guard' => 'web',
         'passwords' => 'users',
     ],
 
@@ -40,10 +40,6 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
-        'api' => [
-            'driver' => 'sanctum',
-            'provider' => 'users',
-        ],
     ],
 
     /*
@@ -66,7 +62,7 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => App\Models\Account::class,  // Changé de User::class à Account::class
+            'model' => App\Models\User::class,
         ],
 
         // 'users' => [

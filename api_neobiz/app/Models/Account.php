@@ -2,38 +2,28 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Notifications\ResetPasswordNotification;
 use App\Notifications\VerifyEmailNotification;
 use Illuminate\Support\Facades\URL;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class Account extends Authenticatable implements MustVerifyEmail
+class Account extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, Notifiable;
 
     protected $fillable = [
-        'name',
-        'email',
-        'password',
-        'is_active',
-        'account_status_id',
-        'two_factor_code',
-        'two_factor_expires_at'
+        'name', 'email', 'password', 'is_active'
     ];
 
     protected $hidden = [
-        'password',
-        'remember_token',
+        'password', 'remember_token', 'two_factor_code', 'two_factor_expires_at'
     ];
 
     protected $casts = [
         'email_verified_at' => 'datetime',
         'two_factor_expires_at' => 'datetime',
-        'is_active' => 'boolean',
     ];
 
     public function roles()
@@ -75,14 +65,5 @@ class Account extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Project::class);
     }
 
-        public function status()
-    {
-        return $this->belongsTo(AccountStatus::class, 'account_status_id');
-    }
-
-    public function payments()
-    {
-        return $this->hasMany(Payment::class);
-    }
 
 }

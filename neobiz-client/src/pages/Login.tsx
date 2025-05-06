@@ -21,13 +21,18 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      const result = await login(email, password);
-      if (!result.success) {
+      // La fonction login peut maintenant retourner { success: boolean; message?: string; twoFactorRequired?: boolean }
+      const result = await login({ email, password });
+
+      // Si la connexion échoue ET que ce n'est pas une redirection pour 2FA, afficher l'erreur.
+      // Si twoFactorRequired est true, la navigation a déjà été gérée dans AuthContext.
+      if (!result.success && !result.twoFactorRequired) {
         setError(result.message || "Une erreur est survenue lors de la connexion.");
       }
-    } catch (err) {
+      // Si result.success est true, la navigation (vers le dashboard ou la page 2FA) a été gérée.
+    } catch (err) { // Ce catch est pour les erreurs inattendues non gérées par la fonction login elle-même.
       setError("Une erreur inattendue s'est produite. Veuillez réessayer.");
-      console.error(err);
+      console.error(err); // Loggez l'erreur pour le débogage.
     } finally {
       setIsLoading(false);
     }
