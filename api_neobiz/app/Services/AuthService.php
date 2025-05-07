@@ -5,9 +5,9 @@ namespace App\Services;
 use App\Models\Account;
 use App\Repositories\AccountRepository;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Role; // Assurez-vous que votre modèle Role est bien ici
+
 
 class AuthService
 {
@@ -24,26 +24,28 @@ class AuthService
     public function login(array $credentials)
     {
         $remember = $credentials['remember_me'] ?? false;
-
-        $account = $this->accounts->findByEmail($credentials['email']);
-
-        if (! $account || ! Hash::check($credentials['password'], $account->password)) {
+    
+        $account = Account::with('roles')->where('email', $credentials['email'])->first();
+    
+        if (!$account || !Hash::check($credentials['password'], $account->password)) {
             abort(401, 'Identifiants incorrects.');
         }
-
-        if (! $account->is_active) {
+    
+        if (!$account->is_active) {
             abort(403, 'Votre compte est désactivé.');
         }
-
-        if (! $account->hasVerifiedEmail()) {
-            abort(403, 'Votre adresse email n\'est pas vérifiée.');
-        }
-
-        $this->generateAndSendTwoFactorCode($account);
-
+    
+        Auth::login($account, $remember);
+    
         return response()->json([
-            'message' => 'Un code de vérification a été envoyé à votre adresse email.',
-            'remember_me' => $remember,
+            'message' => 'Connexion réussie.',
+            'user' => [
+                'id' => $account->id,
+                'name' => $account->name,
+                'email' => $account->email,
+                'roles' => $account->roles->pluck('name')->toArray() // Récupère tous les rôles sous forme de tableau
+            ],
+            'remember_me' => $remember
         ]);
     }
 
@@ -53,21 +55,31 @@ class AuthService
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => bcrypt($data['password']),
-            'is_active' => true,
+            'is_active' => true, // Actif par défaut
         ]);
 
-        event(new \Illuminate\Auth\Events\Registered($account));
-        
+        // Attribution automatique du rôle "client" en utilisant le modèle Role
+        $clientRole = Role::where('name', 'client')->first();
+        if ($clientRole) {
+            $account->roles()->attach($clientRole->id);
+        } else {
+            // Gérer le cas où le rôle 'client' n'existe pas, par exemple, logguer une erreur.
+            // Il est préférable de s'assurer que ce rôle est créé via les migrations/seeders.
+        }
 
-        $verificationUrl = URL::temporarySignedRoute(
-            'verification.verify',
-            Carbon::now()->addMinutes(60),
-            ['id' => $account->id, 'hash' => sha1($account->email)]
-        );
+        // Connexion automatique
+        Auth::login($account);
+        $account->load('roles'); // Recharger l'instance pour inclure la relation des rôles
 
         return response()->json([
-            'message' => 'Inscription réussie. Veuillez vérifier votre adresse email.',
-            'verification_url' => $verificationUrl,
+            'message' => 'Inscription réussie.',
+            'user' => [
+                'id' => $account->id,
+                'name' => $account->name,
+                'email' => $account->email,
+                'is_active' => $account->is_active,
+                'roles' => $account->roles->pluck('name')->toArray() // Inclure les rôles
+            ]
         ], 201);
     }
 
@@ -75,6 +87,8 @@ class AuthService
     /**
      * Generate and send a two-factor authentication code.
      */
+    
+     /*
     protected function generateAndSendTwoFactorCode(Account $account): void
     {
         $account->two_factor_code = random_int(100000, 999999);
@@ -86,7 +100,9 @@ class AuthService
                     ->subject('Code de vérification 2FA');
         });
     }
+        */
 
+   /*
     public function verify2fa(array $data)
     {
         $account = Account::where('email', $data['email'])->first();
@@ -118,6 +134,6 @@ class AuthService
         ]);
     }
 
-
+    */
 
 }

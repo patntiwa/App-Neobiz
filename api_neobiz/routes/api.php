@@ -23,7 +23,7 @@ use Illuminate\Foundation\Auth\EmailVerificationRequest;
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/verify-2fa', [AuthController::class, 'verify2fa']);
+    //Route::post('/verify-2fa', [AuthController::class, 'verify2fa']);
     Route::post('/forgot-password', [PasswordResetController::class, 'forgot']);
     Route::post('/reset-password', [PasswordResetController::class, 'reset']);
 });
@@ -33,12 +33,12 @@ Route::prefix('auth')->group(function () {
 | Email Verification Routes
 |--------------------------------------------------------------------------
 */
-Route::middleware(['signed'])->name('verification.verify')
+/*Route::middleware(['signed'])->name('verification.verify')
     ->get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
         $request->fulfill();
         return response()->json(['message' => 'Votre adresse email a été vérifiée avec succès.']);
     });
-
+*/
 /*
 |--------------------------------------------------------------------------
 | Protected Routes

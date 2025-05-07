@@ -1,15 +1,15 @@
-export type UserRole = 'admin' | 'client' | 'freelance';
-
+// Dans vos types auth.ts
 export interface User {
-  id: string;
-  email: string;
+  id: number;
   name: string;
-  role: UserRole;
-  avatar?: string;
-  company?: string;
-  siret?: string;
-  createdAt: string;
-  updatedAt: string;
+  email: string;
+  is_active: boolean;
+  roles: string[]; // Tableau de rôles
+}
+
+export interface AuthResponse {
+  message?: string;
+  user: User;
 }
 
 export interface LoginCredentials {
@@ -24,7 +24,7 @@ export interface RegisterData {
   password_confirmation: string;
   company?: string;
   siret?: string;
-  role?: UserRole;
+  role?: string[];
 }
 
 export interface AuthResponse {

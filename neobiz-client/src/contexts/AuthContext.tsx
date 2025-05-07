@@ -15,10 +15,11 @@ interface AuthState {
 }
 
 interface AuthContextType extends AuthState {
-  login: (credentials: LoginCredentials) => Promise<{ success: boolean; message?: string; twoFactorRequired?: boolean }>;
+  login: (credentials: LoginCredentials) => Promise<{ success: boolean; message?: string }>;
   register: (data: RegisterData) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
   updateUser: (data: Partial<User>) => Promise<void>;
+  hasRole: (role: string) => boolean; // Ajout de la fonction hasRole
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -85,57 +86,101 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [state.isInitialized, state.user]);
 
-  const login = async (credentials: LoginCredentials): Promise<{ success: boolean; message?: string; twoFactorRequired?: boolean }> => {
+  // Fonction utilitaire pour vérifier si l'utilisateur a un rôle spécifique
+  const hasRole = (roleName: string): boolean => {
+    return state.user?.roles?.includes(roleName) ?? false;
+  };
+
+  const login = async (credentials: LoginCredentials) => {
     setState(prev => ({ ...prev, isLoading: true }));
     try {
-      // 0) Récupérer le cookie CSRF avant le login
+      // 1. Récupération du cookie CSRF
       await axios.get(`${API_URL}/sanctum/csrf-cookie`, { withCredentials: true });
-
-      // 1) Envoyer la requête de login avec le nouveau endpoint /auth/login
-      // Utiliser `any` temporairement pour inspecter la réponse ou définir un type plus flexible
-      // qui peut inclure des indicateurs 2FA et l'objet utilisateur.
-      const { data } = await axiosInstance.post<any>('/auth/login', credentials);
-
-      // Vérifier si la 2FA est requise (adaptez "data.two_factor_enabled" à votre réponse API réelle)
-      if (data && data.two_factor_enabled === true) {
-        // Rediriger vers la page de vérification 2FA.
-        // Vous pourriez avoir besoin de stocker temporairement un identifiant ou un jeton si l'API le fournit pour l'étape 2FA.
-        navigate('/TwoFactorAuth'); // Assurez-vous que cette route existe et mène à votre composant de saisie de code 2FA.
-        return { success: true, twoFactorRequired: true, message: data.message || "Vérification en deux étapes requise." };
+  
+      // 2. Tentative de connexion
+      const { data } = await axiosInstance.post<AuthResponse>('/auth/login', credentials);
+  
+      // 3. Vérification de la réponse
+      if (!data?.user?.roles) {
+        throw new Error('Réponse de connexion invalide : structure de données incorrecte');
       }
-
-      // Si la connexion est directe et réussie (pas de 2FA ou 2FA déjà passée)
-      if (data && data.user) {
-        setState(prev => ({ ...prev, user: data.user }));
-
-        // Appel de getClientsRequest() après connexion réussie (si nécessaire)
-        // getClientsRequest(); 
-
-        const from = (location.state as any)?.from?.pathname
-          || (data.user.role === 'admin' ? '/admin/dashboard' : '/dashboard');
-        navigate(from, { replace: true });
-        return { success: true };
-      }
+  
+      // Debug: Afficher les données reçues
+      console.log('Données utilisateur reçues:', data.user);
+  
+      // 4. Mise à jour de l'état
+      setState(prev => ({ ...prev, user: data.user }));
+  
+      // 5. Détermination de la redirection
+      const determineRedirectPath = (): string => {
+        // Priorité à la redirection précédente si elle existe
+        const fromPath = (location.state as any)?.from?.pathname;
+        if (fromPath) {
+          console.log('Redirection vers le chemin précédent:', fromPath);
+          return fromPath;
+        }
+  
+        // Hiérarchie des redirections par rôle
+        const roleRedirects: Record<string, string> = {
+          'super_admin': '/admin/dashboard',
+          'admin': '/admin/dashboard',
+          'project_manager': '/pm/dashboard',
+          'freelancer': '/freelancer/projects',
+          'client': '/dashboard',
+          'accountant': '/accounting',
+          'support_agent': '/support'
+        };
+  
+        // Trouver le premier rôle correspondant
+        for (const role of data.user.roles) {
+          if (roleRedirects[role]) {
+            console.log(`Redirection pour le rôle ${role}:`, roleRedirects[role]);
+            return roleRedirects[role];
+          }
+        }
+  
+        // Fallback par défaut
+        console.log('Redirection par défaut vers /dashboard');
+        return '/dashboard';
+      };
+  
+      // 6. Exécution de la redirection
+      const redirectPath = determineRedirectPath();
+      navigate(redirectPath, { replace: true });
+  
+      return { success: true };
+  
+    } catch (error: any) {
+      // Gestion d'erreur améliorée
+      let errorMessage = 'Échec de la connexion';
       
-      // Si la réponse est 200 OK mais n'a ni indicateur 2FA ni objet utilisateur valide
-      throw new Error("Réponse de connexion inattendue du serveur.");
-
-    } catch (error: any) { // Utilisation de 'any' pour un accès flexible à error.response.data
-      handleError(error);
-      const message = error?.response?.data?.message || error.message || 'Échec de la connexion';
-      return { success: false, message };
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data?.message || 
+                      error.response?.data?.error ||
+                      error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+  
+      console.error('Erreur de connexion:', errorMessage);
+      return { success: false, message: errorMessage };
+  
     } finally {
       setState(prev => ({ ...prev, isLoading: false }));
     }
   };
 
+
   const register = async (info: RegisterData) => {
     setState(prev => ({ ...prev, isLoading: true }));
     try {
       const { data } = await axiosInstance.post<AuthResponse>('/auth/register', info);
-      setState(prev => ({ ...prev, user: data.user }));
-      navigate('/login');
-      return { success: true };
+      if (data.user?.roles) {
+        setState(prev => ({ ...prev, user: data.user }));
+        navigate('/dashboard'); // Par défaut pour les nouveaux comptes
+        return { success: true };
+      }
+      throw new Error('Réponse incomplète');
     } catch (error: any) {
       handleError(error);
       let specificMessage = "Échec de l'inscription. Veuillez vérifier les informations fournies.";
@@ -189,6 +234,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         register,
         logout,
         updateUser,
+        hasRole, // Exposer hasRole dans le contexte
       }}
     >
       {state.isInitialized ? children : null}

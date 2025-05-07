@@ -22,18 +22,18 @@ import {
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
-  isAdmin?: boolean;
 }
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ 
-  children,
-  isAdmin = false 
+  children
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const location = useLocation();
   const isMobile = useIsMobile();
-  const { currentUser, logout } = useAuth();
+  const { user: currentUser, logout, hasRole } = useAuth(); // Récupérer user (renommé en currentUser pour la clarté) et hasRole
 
+  // Déterminer si l'utilisateur est un admin en fonction de ses rôles
+  const isAdmin = hasRole('admin') || hasRole('super_admin'); // Vous pouvez ajuster les rôles considérés comme admin
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   
   React.useEffect(() => {
